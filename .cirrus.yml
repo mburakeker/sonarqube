@@ -1,16 +1,14 @@
 # content of service-account-credentials.json, used to access to Google Cloud Platform
-gcp_credentials: ENCRYPTED[ec86f04ec57d8a7f29ad6b84b41262c9d576abc533485754fdfdb24db103adf0d33ba4ba89a57d29d2549790be5abc72]
+gcp_credentials: ENCRYPTED[!e5f7207bd8d02d383733bef47e18296ac32e3b7d22eb480354e8dd8fdc0004be45a8a4e72c797bd66ee94eb3340fa363!]
 
 env:
   GRADLE_OPTS: -Dorg.gradle.daemon=false -Dorg.gradle.jvmargs="-XX:+PrintFlagsFinal -XshowSettings:vm -XX:+HeapDumpOnOutOfMemoryError -XX:+UnlockExperimentalVMOptions -Djava.security.egd=file:/dev/./urandom -Dfile.encoding=UTF8 -Duser.language=en -Duser.country=US"
   # to be replaced by other credentials
-  ARTIFACTORY_PRIVATE_USERNAME: ENCRYPTED[c0baa3376daa1e08d602435081d07653799cf34ab09ca92e575f3dc4176bc6cf2ebf87120e83f3aa6804f072013e8e2b]
-  ARTIFACTORY_PRIVATE_PASSWORD: ENCRYPTED[f13d32d218c3da8008114d2c8857b2956047fbdab2163bbf186b8b89f789f0efa7504f499749a59ad5988c14e5360353]
-  ARTIFACTORY_DEPLOY_USERNAME: public-qa-deployer
-  ARTIFACTORY_DEPLOY_PASSWORD: ENCRYPTED[9362d735843b21b375b6e19d91e0de5216e053e229e39e2ce33a0c866306e6e3f9b08db8a0e126ca5e986fea97e975fd]
-  ARTIFACTORY_DEPLOY_USERNAME_PRIVATE: private-qa-deployer
-  ARTIFACTORY_DEPLOY_PASSWORD_PRIVATE: ENCRYPTED[61769719e9b775afe103dbee22141eeaa0116b3332eafb993be2a5919ff7bf017cdc519afed07dc6cac8ebbc0846f191]
-  ARTIFACTORY_API_KEY: ENCRYPTED[d52910db749f2678f43084b18c849486d68fbc02c2f5489c7ee1085c395de9dc7575313a8b348bb5361a693dd782e07e]
+  ARTIFACTORY_PRIVATE_USERNAME: repox-private-reader
+  ARTIFACTORY_PRIVATE_PASSWORD: ENCRYPTED[!35ca4446564213d4fd2d1a96e42a871d5de6e6aac4e1dd3e89342892a60a2badf74a966bcc8e885e9c9d09a775ffe4c0!]
+  ARTIFACTORY_DEPLOY_USERNAME: repox-qa-deployer
+  ARTIFACTORY_DEPLOY_PASSWORD: ENCRYPTED[!d484e19f33c9ce63b165f70e414a33b1ac6c215a126791aacbf8059626caf0fd8a78e999a20af5c1a4ba01c0b0247921!]
+  ARTIFACTORY_API_KEY: ENCRYPTED[60f92cec4bf8446867dce41fe8dc77457f10065b82a24bfa3924d496aa1c14b89b531b86c3a34274abb12cf9a4cb36c4]
   # download licenses for testing commercial editions
   GITHUB_TOKEN: ENCRYPTED[!f272985ea5b49b3cf9c414b98de6a8e9096be47bfcee52f33311ba3131a2af637c1b956f49585b7757dd84b7c030233a!]
   # use a permanent GitHub access token to perform a clone (by default CirrusCI uses a temporary one)
@@ -26,20 +24,19 @@ env:
 
 auto_cancellation: $CIRRUS_BRANCH != 'master' && $CIRRUS_BRANCH !=~ 'branch.*'
 
-task_only_nightly_depending_on_build_template: &TASK_ONLY_NIGHTLY_DEPENDING_ON_BUILD_TEMPLATE
+only_nightly_depending_on_build_template: &ONLY_NIGHTLY_DEPENDING_ON_BUILD_TEMPLATE
   depends_on: build
   # Comment the following line and commit with message "DO NOT MERGE" in order to run
   # this task on your branch
   only_if: $CIRRUS_BRANCH == "branch-nightly-build"
 
-task_only_default_depending_on_build_template: &TASK_ONLY_DEFAUT_DEPENDING_ON_BUILD_TEMPLATE
+only_default_depending_on_build_template: &ONLY_DEFAUT_DEPENDING_ON_BUILD_TEMPLATE
   depends_on: build
   only_if: >-
            $CIRRUS_BRANCH !=~ "dogfood/.*" &&
            $CIRRUS_BRANCH != "public_master" &&
            $CIRRUS_BRANCH != "branch-nightly-build" &&
-           $CIRRUS_CRON == "" &&
-           $CIRRUS_CHANGE_MESSAGE !=~ '.*\[update headers\].*'
+           $CIRRUS_CRON == ""
 
 docker_build_container_template: &GKE_CONTAINER_TEMPLATE
   dockerfile: private/docker/Dockerfile-build
@@ -112,14 +109,17 @@ build_task:
     # Depth of 1 is not enough because it would fail the build in case of consecutive pushes
     # (example of error: "Hard resetting to c968ecaf7a1942dacecd78480b3751ac74d53c33...Failed to force reset to c968ecaf7a1942dacecd78480b3751ac74d53c33: object not found!")
     CIRRUS_CLONE_DEPTH: 50
+    ORG_GRADLE_PROJECT_signingKey: ENCRYPTED[!cc216dfe592f79db8006f2a591f8f98b40aa2b078e92025623594976fd32f6864c1e6b6ba74b50647f608e2418e6c336!]
+    ORG_GRADLE_PROJECT_signingPassword: ENCRYPTED[!314a8fc344f45e462dd5e8dccd741d7562283a825e78ebca27d4ae9db8e65ce618e7f6aece386b2782a5abe5171467bd!]
+    ORG_GRADLE_PROJECT_signingKeyId: 0x7DCD4258
   script:
     - ./private/cirrus/cirrus-build.sh
   on_failure:
     reports_artifacts:
       path: "**/build/reports/**/*"
 
-validate_task: &VALIDATE_TASK
-  <<: *TASK_ONLY_DEFAUT_DEPENDING_ON_BUILD_TEMPLATE
+validate_task:
+  <<: *ONLY_DEFAUT_DEPENDING_ON_BUILD_TEMPLATE
   <<: *NODE_MODULES_CACHE_TEMPLATE
   timeout_in: 90m
   gke_container:
@@ -133,19 +133,8 @@ validate_task: &VALIDATE_TASK
   on_failure:
     <<: *REPORTS_JUNIT_ON_FAILURE_TEMPLATE
 
-validate_license_change_task:
-  <<: *VALIDATE_TASK
-  name: validate # Give it the same name as its counterpart, so we can reference it on GitHub.
-  only_if: >- # Only execute if the commit message has the "[update headers]" tag.
-           $CIRRUS_BRANCH !=~ "dogfood/.*" &&
-           $CIRRUS_BRANCH != "public_master" &&
-           $CIRRUS_BRANCH != "branch-nightly-build" &&
-           $CIRRUS_CRON == "" &&
-           $CIRRUS_CHANGE_MESSAGE =~ '.*\[update headers\].*'
-  timeout_in: 180m # Increase timeout, as license changes impact all files, which slows down the analysis considerably.
-
 yarn_check-ci_task:
-  <<: *TASK_ONLY_DEFAUT_DEPENDING_ON_BUILD_TEMPLATE
+  <<: *ONLY_DEFAUT_DEPENDING_ON_BUILD_TEMPLATE
   <<: *NODE_MODULES_CACHE_TEMPLATE
   timeout_in: 90m
   gke_container:
@@ -159,7 +148,7 @@ yarn_check-ci_task:
     <<: *REPORTS_JUNIT_ON_FAILURE_TEMPLATE
 
 qa_task:
-  <<: *TASK_ONLY_DEFAUT_DEPENDING_ON_BUILD_TEMPLATE
+  <<: *ONLY_DEFAUT_DEPENDING_ON_BUILD_TEMPLATE
   gke_container:
     <<: *GKE_CONTAINER_TEMPLATE
     cpu: 3
@@ -191,7 +180,7 @@ qa_task:
     <<: *REPORTS_JUNIT_SCREENSHOTS_ON_FAILURE_TEMPLATE
 
 qa_bitbucket_task:
-  <<: *TASK_ONLY_NIGHTLY_DEPENDING_ON_BUILD_TEMPLATE
+  <<: *ONLY_NIGHTLY_DEPENDING_ON_BUILD_TEMPLATE
   gke_container:
     <<: *GKE_CONTAINER_TEMPLATE
     cpu: 3
@@ -207,8 +196,8 @@ qa_bitbucket_task:
     CIRRUS_CLONE_DEPTH: 50
     QA_CATEGORY: BITBUCKET
   matrix:
-    - name: qa_bitbucket_5.16.11
-      bitbucket_background_script: ./private/cirrus/cirrus-start-bitbucket.sh 5.16.11
+    - name: qa_bitbucket_5.15.0
+      bitbucket_background_script: ./private/cirrus/cirrus-start-bitbucket.sh 5.15.0
     - name: qa_bitbucket_latest
       bitbucket_background_script: ./private/cirrus/cirrus-start-bitbucket.sh LATEST
   wait_for_bitbucket_to_boot_script: secs=3600; endTime=$(( $(date +%s) + secs )); while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:7990/bitbucket/status)" != "200" ]] || [ $(date +%s) -gt $endTime ]; do sleep 5; done
@@ -218,7 +207,7 @@ qa_bitbucket_task:
     <<: *REPORTS_JUNIT_SCREENSHOTS_ON_FAILURE_TEMPLATE
 
 qa_ha_task:
-  <<: *TASK_ONLY_NIGHTLY_DEPENDING_ON_BUILD_TEMPLATE
+  <<: *ONLY_NIGHTLY_DEPENDING_ON_BUILD_TEMPLATE
   gke_container:
     <<: *GKE_CONTAINER_TEMPLATE
     cpu: 2.4
@@ -242,7 +231,7 @@ qa_ha_task:
 
 # GitLab QA is executed in a dedicated task in order to not slow down the pipeline, as a GitLab on-prem server docker image is required.
 qa_gitlab_task:
-  <<: *TASK_ONLY_NIGHTLY_DEPENDING_ON_BUILD_TEMPLATE
+  <<: *ONLY_NIGHTLY_DEPENDING_ON_BUILD_TEMPLATE
   gke_container:
     <<: *GKE_CONTAINER_TEMPLATE
     cpu: 2.4
@@ -250,7 +239,9 @@ qa_gitlab_task:
     use_in_memory_disk: true
     additional_containers:
       - name: gitlab
-        image: gitlab/gitlab-ce:latest
+        matrix:
+          - image: gitlab/gitlab-ce:latest
+          - image: gitlab/gitlab-ce:11.7.0-ce.0
         port: 8080:80
         cpu: 1
         memory: 5Gb
@@ -260,7 +251,7 @@ qa_gitlab_task:
           token = User.find_by_username('root').personal_access_tokens.create(scopes: [:api], name: 'token');
           token.set_token('token-here-456');
           token.save!;
-          token_read = User.find_by_username('root').personal_access_tokens.create(scopes: [:read_api], name: 'token_read');
+          token_read = User.find_by_username('root').personal_access_tokens.create(scopes: [:read_user], name: 'token_read');
           token_read.set_token('token-read-123');
           token_read.save!;
           user = User.find_by_username('root');
@@ -285,7 +276,7 @@ qa_gitlab_task:
 
 # Azure QA is executed in a dedicated task in order to not slow down the pipeline.
 qa_azure_task:
-  <<: *TASK_ONLY_NIGHTLY_DEPENDING_ON_BUILD_TEMPLATE
+  <<: *ONLY_NIGHTLY_DEPENDING_ON_BUILD_TEMPLATE
   gke_container:
     <<: *GKE_CONTAINER_TEMPLATE
     cpu: 2.4
@@ -310,7 +301,7 @@ qa_azure_task:
 
 # SAML QA is executed in a dedicated task in order to not slow down the pipeline, as a Keycloak server docker image is required.
 qa_saml_task:
-  <<: *TASK_ONLY_NIGHTLY_DEPENDING_ON_BUILD_TEMPLATE
+  <<: *ONLY_NIGHTLY_DEPENDING_ON_BUILD_TEMPLATE
   gke_container:
     <<: *GKE_CONTAINER_TEMPLATE
     cpu: 2.4
@@ -341,7 +332,7 @@ qa_saml_task:
 
 # LDAP QA is executed in a dedicated task in order to not slow down the pipeline, as a LDAP server and SonarQube server are re-started on each test.
 qa_ldap_task:
-  <<: *TASK_ONLY_NIGHTLY_DEPENDING_ON_BUILD_TEMPLATE
+  <<: *ONLY_NIGHTLY_DEPENDING_ON_BUILD_TEMPLATE
   gke_container:
     <<: *GKE_CONTAINER_TEMPLATE
     cpu: 2.4
@@ -361,8 +352,8 @@ qa_ldap_task:
   on_failure:
     <<: *REPORTS_JUNIT_SCREENSHOTS_ON_FAILURE_TEMPLATE
 
-promote_task: &PROMOTE_TASK
-  <<: *TASK_ONLY_DEFAUT_DEPENDING_ON_BUILD_TEMPLATE
+promote_task:
+  <<: *ONLY_DEFAUT_DEPENDING_ON_BUILD_TEMPLATE
   depends_on:
     - build
     - validate
@@ -380,19 +371,6 @@ promote_task: &PROMOTE_TASK
   script:
     - ./private/cirrus/cirrus-promote.sh
 
-promote_license_change_task:
-  <<: *PROMOTE_TASK
-  name: promote # Give it the same name as its counterpart, so we can reference it on GitHub.
-  only_if: >- # Only execute if the commit message has the "[update headers]" tag.
-           $CIRRUS_BRANCH !=~ "dogfood/.*" &&
-           $CIRRUS_BRANCH != "public_master" &&
-           $CIRRUS_BRANCH != "branch-nightly-build" &&
-           $CIRRUS_CRON == "" &&
-           $CIRRUS_CHANGE_MESSAGE =~ '.*\[update headers\].*'
-  depends_on:
-    - build
-    - validate
-
 deploy_docs_task:
   depends_on: promote
   only_if: $CIRRUS_BRANCH == 'dogfood-on-next'
@@ -406,8 +384,8 @@ deploy_docs_task:
   script:
     - ./private/cirrus/cirrus-trigger-deploy-docs.sh
 
-sql_mssql2019_task:
-  <<: *TASK_ONLY_NIGHTLY_DEPENDING_ON_BUILD_TEMPLATE
+sql_mssql2017_task:
+  <<: *ONLY_NIGHTLY_DEPENDING_ON_BUILD_TEMPLATE
   gke_container:
     <<: *GKE_CONTAINER_TEMPLATE
     memory: 5Gb
@@ -428,7 +406,7 @@ sql_mssql2019_task:
 
 # this is the oldest compatible version of PostgreSQL
 sql_postgres96_task:
-  <<: *TASK_ONLY_NIGHTLY_DEPENDING_ON_BUILD_TEMPLATE
+  <<: *ONLY_NIGHTLY_DEPENDING_ON_BUILD_TEMPLATE
   gke_container:
     <<: *GKE_CONTAINER_TEMPLATE
     memory: 5Gb
@@ -441,7 +419,7 @@ sql_postgres96_task:
     <<: *REPORTS_JUNIT_ON_FAILURE_TEMPLATE
 
 sql_oracle12_task:
-  <<: *TASK_ONLY_NIGHTLY_DEPENDING_ON_BUILD_TEMPLATE
+  <<: *ONLY_NIGHTLY_DEPENDING_ON_BUILD_TEMPLATE
   gke_container:
     <<: *GKE_CONTAINER_TEMPLATE
     memory: 5Gb
@@ -453,7 +431,7 @@ sql_oracle12_task:
     <<: *REPORTS_JUNIT_ON_FAILURE_TEMPLATE
 
 upgd_mssql2019_task:
-  <<: *TASK_ONLY_NIGHTLY_DEPENDING_ON_BUILD_TEMPLATE
+  <<: *ONLY_NIGHTLY_DEPENDING_ON_BUILD_TEMPLATE
   gke_container:
     <<: *GKE_CONTAINER_TEMPLATE
     cpu: 1.5
@@ -482,7 +460,7 @@ upgd_mssql2019_task:
 
 
 upgd_oracle12_task:
-  <<: *TASK_ONLY_NIGHTLY_DEPENDING_ON_BUILD_TEMPLATE
+  <<: *ONLY_NIGHTLY_DEPENDING_ON_BUILD_TEMPLATE
   gke_container:
     <<: *GKE_CONTAINER_TEMPLATE
     cpu: 1.5

@@ -21,7 +21,7 @@ import { shallow } from 'enzyme';
 import * as React from 'react';
 import { click } from 'sonar-ui-common/helpers/testUtils';
 import {
-  mockBitbucketBindingDefinition,
+  mockAlmSettingsInstance,
   mockProjectAzureBindingResponse,
   mockProjectBitbucketBindingResponse,
   mockProjectGithubBindingResponse,
@@ -57,7 +57,7 @@ it('should render correctly', () => {
   expect(
     shallowRender({
       selectedTutorial: TutorialModes.GitHubActions,
-      projectBinding: mockProjectGitLabBindingResponse()
+      projectBinding: mockProjectGithubBindingResponse()
     })
   ).toMatchSnapshot('github actions tutorial');
   expect(
@@ -139,7 +139,7 @@ it('should allow mode selection for Azure DevOps', () => {
 function shallowRender(props: Partial<TutorialSelectionRendererProps> = {}) {
   return shallow<TutorialSelectionRendererProps>(
     <TutorialSelectionRenderer
-      almBinding={mockBitbucketBindingDefinition()}
+      almBinding={mockAlmSettingsInstance()}
       baseUrl="http://localhost:9000"
       component={mockComponent()}
       currentUser={mockLoggedInUser()}

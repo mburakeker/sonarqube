@@ -25,7 +25,6 @@ import rehypeSlug from 'rehype-slug';
 import remark from 'remark';
 import remarkCustomBlocks from 'remark-custom-blocks';
 import remarkRehype from 'remark-rehype';
-import MetaData from 'sonar-ui-common/components/ui/update-center/MetaData';
 import { scrollToElement } from 'sonar-ui-common/helpers/scrolling';
 import DocCollapsibleBlock from './DocCollapsibleBlock';
 import DocImg from './DocImg';
@@ -39,19 +38,35 @@ interface Props {
   className?: string;
   content: string;
   isTooltip?: boolean;
+  scrollToHref?: string;
   stickyToc?: boolean;
   title?: string;
 }
 
+const WAIT_TIMEOUT = 500;
+
 export default class DocMarkdownBlock extends React.PureComponent<Props> {
   node: HTMLElement | null = null;
 
-  handleAnchorClick = (href: string, event: React.MouseEvent<HTMLAnchorElement>) => {
+  componentDidMount() {
+    const { scrollToHref } = this.props;
+    if (scrollToHref) {
+      setTimeout(() => {
+        this.handleAnchorClick(scrollToHref);
+      }, WAIT_TIMEOUT);
+    }
+  }
+
+  handleAnchorClick = (href: string, event?: React.MouseEvent<HTMLAnchorElement>) => {
     if (this.node) {
       const element = this.node.querySelector(href);
       if (element) {
-        event.preventDefault();
+        if (event) {
+          event.preventDefault();
+        }
         scrollToElement(element, { bottomOffset: window.innerHeight - 80 });
+
+        // We cannot use React Router here, because we cannot simply replace a hash.
         if (history.pushState) {
           history.pushState(null, '', href);
         }
@@ -84,10 +99,7 @@ export default class DocMarkdownBlock extends React.PureComponent<Props> {
             ? withChildProps(DocTooltipLink, childProps)
             : withChildProps(DocLink, { onAnchorClick: this.handleAnchorClick }),
           // use custom img tag to render documentation images
-          img: DocImg,
-          'update-center': ({ updatecenterkey }: { updatecenterkey: string }) => (
-            <MetaData updateCenterKey={updatecenterkey} />
-          )
+          img: DocImg
         }
       });
 

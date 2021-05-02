@@ -2,15 +2,23 @@
 title: Release Upgrade Notes
 url: /setup/upgrade-notes/
 ---
-## Release 8.9 Upgrade Notes  
+
+Upgrading directly from SonarQube _v7.9 LTS_? Refer to the [LTS to LTS Release Upgrade Notes](/setup/lts-to-lts-upgrade-notes/).
+
+## Release 8.9 LTS Upgrade Notes  
 **GitHub Enterprise compatibility**  
 SonarQube 8.9 only supports GitHub Enterprise 2.21+ for pull request decoration (the previous minimum version was 2.15).
 
-**Third-party plugins require risk consent**  
-If you are using third-party plugins, a SonarQube administrator needs to acknowledge the risk involved with third-party plugins when prompted in SonarQube after upgrading. ([MMF-2301](https://jira.sonarsource.com/browse/MMF-2301)).
+**Plugins require risk consent**  
+When upgrading, if you're using plugins, a SonarQube administrator needs to acknowledge the risk involved with plugin installation when prompted in SonarQube. ([MMF-2301](https://jira.sonarsource.com/browse/MMF-2301)).
 
-**PostgreSQL Support**
-SonarQube now supports PostgreSQL 13, and it no longer supports PostgreSQL 9.3, 9.4, or 9.5.
+**PostgreSQL support**  
+SonarQube 8.9 only supports PostgreSQL versions 9.6 to 13. PostgreSQL versions <9.6 are no longer supported.
+
+**Webhooks aren't allowed to target the instance**  
+To improve security, webhooks, by default, aren't allowed to point to the SonarQube server. You can change this behavior in the configuration. ([SONAR-14682](https://jira.sonarsource.com/browse/SONAR-14682)).
+
+[Full release notes](https://jira.sonarsource.com/secure/ReleaseNote.jspa?projectId=10930&version=16710)
 
 ## Release 8.8 Upgrade Notes  
 **CSS analysis now requires Node.js 10+**  
@@ -108,6 +116,7 @@ The code coverage for .NET projects now takes into account the branch/condition 
 **Security Hotspots: dedicated space and workflow**
 * The Security Hotspots have a brand new space where developers can perform security reviews. The review process has been simplified. It's no longer necessary to transform a Security Hotspot into a Manual Vulnerability and back. A developer can now simply mark a Security Hotspot as Safe, Fixed, or leave it as-is if more time is needed. ([MMF-1868](https://jira.sonarsource.com/browse/MMF-1868)).
 * Manual Vulnerabilities created from Security Hotspots are migrated to Security Hotspots with the status "To Review". A comment "Migrated from Manual Vulnerability" is added to the review history to recognize them.  
+* The formula to compute the Security Review Rating, which was previously only available at the portfolio level, has been updated to be more meaningful. Historical values for this indicator have been removed to avoid confusion. ([MMF-1890](https://jira.sonarsource.com/browse/MMF-1890)).
 * A Security Hotspots Reviewed metric has been added and is available to Quality Gates along with the Security Review Rating.
 
 **New project homepage**  

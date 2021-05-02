@@ -301,6 +301,12 @@ exports[`should render correctly: azure pipelines tutorial 1`] = `
 exports[`should render correctly: github actions tutorial 1`] = `
 <Fragment>
   <GitHubActionTutorial
+    almBinding={
+      Object {
+        "alm": "github",
+        "key": "key",
+      }
+    }
     baseUrl="http://localhost:9000"
     component={
       Object {
@@ -335,11 +341,10 @@ exports[`should render correctly: github actions tutorial 1`] = `
     }
     projectBinding={
       Object {
-        "alm": "gitlab",
+        "alm": "github",
         "key": "foo",
         "monorepo": true,
         "repository": "PROJECT_KEY",
-        "url": "https://gitlab.com/api/v4",
       }
     }
   />
@@ -399,9 +404,8 @@ exports[`should render correctly: jenkins tutorial 1`] = `
   <Connect(JenkinsTutorial)
     almBinding={
       Object {
+        "alm": "github",
         "key": "key",
-        "personalAccessToken": "asdf1234",
-        "url": "http://bbs.enterprise.com",
       }
     }
     component={

@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-import { GithubBindingDefinition, ProjectAlmBindingResponse } from '../../types/alm-settings';
+import { AlmSettingsInstance, ProjectAlmBindingResponse } from '../../types/alm-settings';
 
 export function quote(os: string): (s: string) => string {
   return os === 'win' ? (s: string) => `"${s}"` : (s: string) => s;
@@ -31,7 +31,7 @@ export function mavenPomSnippet(key: string) {
 
 export function buildGradleSnippet(key: string) {
   return `plugins {
-  id "org.sonarqube" version "3.1.1"
+  id "org.sonarqube" version "3.2.0"
 }
 
 sonarqube {
@@ -56,13 +56,17 @@ export function getUniqueTokenName(tokens: T.UserToken[], initialTokenName = '')
 }
 
 export function buildGithubLink(
-  almBinding: GithubBindingDefinition,
+  almBinding: AlmSettingsInstance,
   projectBinding: ProjectAlmBindingResponse
 ) {
+  if (almBinding.url === undefined) {
+    return null;
+  }
+
   // strip the api path:
   const urlRoot = almBinding.url
-    .replace('/api/v3', '') // GH Enterprise
-    .replace('api.', '') // GH.com
+    .replace(/\/api\/v\d+\/?$/, '') // GH Enterprise
+    .replace(/^https?:\/\/api\.github\.com/, 'https://github.com') // GH.com
     .replace(/\/$/, '');
 
   return `${urlRoot}/${projectBinding.repository}`;

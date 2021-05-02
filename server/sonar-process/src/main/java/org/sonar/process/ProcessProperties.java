@@ -123,6 +123,13 @@ public class ProcessProperties {
     CLUSTER_NAME("sonar.cluster.name", "sonarqube"),
     CLUSTER_WEB_STARTUP_LEADER("sonar.cluster.web.startupLeader"),
 
+    CLUSTER_SEARCH_PASSWORD("sonar.cluster.search.password"),
+    CLUSTER_ES_KEYSTORE("sonar.cluster.es.ssl.keystore"),
+    CLUSTER_ES_TRUSTSTORE("sonar.cluster.es.ssl.truststore"),
+    CLUSTER_ES_KEYSTORE_PASSWORD("sonar.cluster.es.ssl.keystorePassword"),
+    CLUSTER_ES_TRUSTSTORE_PASSWORD("sonar.cluster.es.ssl.truststorePassword"),
+
+
     // search node only settings
     CLUSTER_ES_HOSTS("sonar.cluster.es.hosts"),
     CLUSTER_NODE_SEARCH_HOST("sonar.cluster.node.search.host"),
@@ -139,7 +146,6 @@ public class ProcessProperties {
     SONAR_WEB_SSO_REFRESH_INTERVAL_IN_MINUTES("sonar.web.sso.refreshIntervalInMinutes", "5"),
     SONAR_SECURITY_REALM("sonar.security.realm"),
     SONAR_AUTHENTICATOR_IGNORE_STARTUP_FAILURE("sonar.authenticator.ignoreStartupFailure", "false"),
-    SONAR_VALIDATE_WEBHOOKS("sonar.validateWebhooks", Boolean.TRUE.toString()),
 
     LDAP_SERVERS("ldap.servers"),
     LDAP_URL("ldap.url"),
